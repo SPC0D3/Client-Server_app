@@ -1,10 +1,15 @@
 # Sohum Pete 210354790 
 #
 
+
+#note: The 'list' and 'get' commands work only for the current working directory
+
+
 # Import socket module
 import socket
 import threading
 import datetime
+import os
 
 # Server Configuration
 HOST = 'localhost'
@@ -14,15 +19,12 @@ MAX_CLIENTS = 3
 # Cache to store client information (name, connection/disconnection times)
 clients_cache = {}
 
-# Repository of available files (for demonstration purposes)
-file_repository = ['file1.txt', 'file2.txt', 'file3.txt']
+client_count = 0  # Move client_count to the global scope
+client_lock = threading.Lock()  # Created a threading lock to safely decrement client_count globally without causing a race condition
 
 def handle_client(client_socket, client_name):
     # Store connection time in cache
-    clients_cache[client_name] = {
-        'connected_at': datetime.datetime.now(),
-        'disconnected_at': None
-    }
+    clients_cache[client_name] = {'connected_at': datetime.datetime.now(), 'disconnected_at': None}
 
     print(f"{client_name} connected.")
 
@@ -35,26 +37,42 @@ def handle_client(client_socket, client_name):
 
             # Handle different types of client requests
             if data == "status":
-                # Send server cache details
-                cache_info = "\n".join([f"{name}: connected at {details['connected_at']}, disconnected at {details['disconnected_at']}"
-                                        for name, details in clients_cache.items()])
-                client_socket.send(cache_info.encode())
+                
+                # Send server cache details by appending them to a single string
+                cache_info = ""
+
+                for name, details in clients_cache.items():
+                    cache_info += f"{name}: connected at {details['connected_at']}, disconnected at {details['disconnected_at']}\n"
+                #print the string to the client  
+                client_socket.send(cache_info.encode())                
+                
             elif data == "list":
-                # Send list of available files in repository
-                file_list = "\n".join(file_repository)
-                client_socket.send(file_list.encode())
+
+                file_list = "\n".join(os.listdir())  # Join the list of files into a single string
+                client_socket.send(file_list.encode())  # Encode and send the file list
+
             elif data.startswith("get "):
                 # Handle file request
                 requested_file = data.split(" ", 1)[1]
-                if requested_file in file_repository:
-                    client_socket.send(f"Sending contents of {requested_file}".encode())
+
+                if os.path.exists(requested_file): #Check if the file exists in the current directory
+                    with open(requested_file, 'r') as f: #Opens entered file in read mode and stores content in file_contents variable
+                        file_contents = f.read()
+                        client_socket.send(file_contents.encode())
                 else:
                     client_socket.send("File not found".encode())
+
             elif data == "exit":
                 # Handle client disconnection
                 clients_cache[client_name]['disconnected_at'] = datetime.datetime.now()
                 print(f"{client_name} disconnected.")
+
+                with client_lock:
+                    global client_count
+                    client_count -= 1
+
                 break
+
             else:
                 # Echo message back with "ACK"
                 response = f"{data} ACK"
@@ -71,24 +89,33 @@ def start_server():
     server_socket.listen()
     print("Server is listening...")
 
-    client_count = 0
+    max_clients_reached = False
+    global client_count
+    client_id_num = 0
 
     while True:
-        if client_count < MAX_CLIENTS:
-            # Accept new client connection
-            client_socket, addr = server_socket.accept()
+        with client_lock:
+            if client_count < MAX_CLIENTS:
+                # Accept new client connection
+                client_socket, addr = server_socket.accept()
 
-            client_count += 1
-            client_name = f"Client{client_count:02d}"  # Assign client a name like Client01, Client02, etc.
+                # Reset the max client flag for the else statement so it prints the statement if its reached again
+                max_clients_reached = False
+                client_count += 1 # Tracks the number of active clients
+                client_id_num += 1 # Separate variable to track client id number in cache and console 
+                client_name = f"Client{client_id_num:02d}"  # Assign client a name like Client01, Client02, etc.
 
-            # Send client name to the client
-            client_socket.send(client_name.encode())
+                # Send client name to the client
+                client_socket.send(client_name.encode())
 
-            # Start a new thread to handle the client
-            client_thread = threading.Thread(target=handle_client, args=(client_socket, client_name))
-            client_thread.start()
-        else:
-            print("Max clients connected. No more clients can connect at this time.")
+                # Start a new thread to handle the client
+                client_thread = threading.Thread(target=handle_client, args=(client_socket, client_name))
+                client_thread.start()
+            else:
+                # Prevents infinite printing of the statement with the max clients flag which is reset if the counter decrements
+                if not max_clients_reached:
+                    print("Max clients connected. No more clients can connect at this time.")
+                    max_clients_reached = True  # Set the flag to avoid repeated messages
 
 if __name__ == '__main__':
     start_server()

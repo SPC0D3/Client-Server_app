@@ -1,12 +1,18 @@
 # Sohum Pete 210354790
 # 
+# Note: Please open each client in a separate terminal as the confusion of executing this file more than once in the same 
+#       terminal causes the previous instances of the client in said terminal to remain open if it was not exited beforehand
+#       (We do not yet know how to return to the previous instances of the client to close the instance if it can be done)
 
 # Import socket module
+
 import socket
+HOST = 'localhost'
+PORT = 12345
 
 def start_client():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(('localhost', 12345))  # Connect to the server
+    client_socket.connect((HOST, PORT))  # Connect to the server
 
     # The server will assign a name like Client01, Client02, etc.
     client_name = client_socket.recv(1024).decode()
@@ -31,7 +37,7 @@ def start_client():
 
         # Receive response from the server
         server_response = client_socket.recv(1024).decode()
-        print(f"Server: {server_response}")
+        print(f"Server> {server_response}")
 
     # Close the socket when done
     client_socket.close()
