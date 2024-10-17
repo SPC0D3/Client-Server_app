@@ -1,4 +1,5 @@
-# Sohum Pete 210354790 
+# Sohum Pete            210354790 
+# Dhanush Mohan-Kumar   
 #
 
 
@@ -19,7 +20,7 @@ MAX_CLIENTS = 3
 # Cache to store client information (name, connection/disconnection times)
 clients_cache = {}
 
-client_count = 0  # Move client_count to the global scope
+client_count = 0  # Add client_count to the global scope
 client_lock = threading.Lock()  # Created a threading lock to safely decrement client_count globally without causing a race condition
 
 def handle_client(client_socket, client_name):
@@ -35,7 +36,7 @@ def handle_client(client_socket, client_name):
             if not data:
                 break
 
-            # Handle different types of client requests
+            # Print the current contents of the cache for the session
             if data == "status":
                 
                 # Send server cache details by appending them to a single string
@@ -45,14 +46,16 @@ def handle_client(client_socket, client_name):
                     cache_info += f"{name}: connected at {details['connected_at']}, disconnected at {details['disconnected_at']}\n"
                 #print the string to the client  
                 client_socket.send(cache_info.encode())                
-                
+
+            # Print the list of files in the current working directory    
             elif data == "list":
 
                 file_list = "\n".join(os.listdir())  # Join the list of files into a single string
                 client_socket.send(file_list.encode())  # Encode and send the file list
 
+            #Retreive a file from the current working directory using the file name without an extension
             elif data.startswith("get "):
-                # Handle file request
+                # Handle the file request
                 requested_file = data.split(" ", 1)[1]
 
                 if os.path.exists(requested_file): #Check if the file exists in the current directory
@@ -67,6 +70,7 @@ def handle_client(client_socket, client_name):
                 clients_cache[client_name]['disconnected_at'] = datetime.datetime.now()
                 print(f"{client_name} disconnected.")
 
+                #Decrement the number of clients so another client can take its place later
                 with client_lock:
                     global client_count
                     client_count -= 1
@@ -84,6 +88,7 @@ def handle_client(client_socket, client_name):
     client_socket.close()
 
 def start_server():
+    #Create and bind the TCP socket to the host and a port
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((HOST, PORT))
     server_socket.listen()
