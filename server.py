@@ -130,6 +130,7 @@ def start_server():
                 # If the attempted connection surpasses the MAX_CLIENTS limit, the client is sent a message to close the socket
                 reply = "Failed to Connect"
                 client_socket.send(reply.encode())
+                client_socket.close()
 
 if __name__ == '__main__':
     start_server()
