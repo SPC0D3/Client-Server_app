@@ -1,6 +1,5 @@
 # Sohum Pete            210354790 
-# Dhanush Mohan-Kumar   
-#
+# Dhanush Mohan-Kumar   210348040
 
 
 #note: The 'list' and 'get' commands work only for the current working directory
@@ -17,15 +16,16 @@ HOST = 'localhost'
 PORT = 12345
 MAX_CLIENTS = 3
 
-# Cache to store client information (name, connection/disconnection times)
-clients_cache = {}
+clients_cache = {} # Cache to store client information (name, connection/disconnection times)
+cache_lock = threading.Lock() # Threading lock to safely read and write to the cache 1 thread at a time (avoiding race conditions)
 
 client_count = 0  # Add client_count to the global scope
-client_lock = threading.Lock()  # Created a threading lock to safely decrement client_count globally without causing a race condition
+client_lock = threading.Lock()  # Threading lock to safely decrement client_count globally without causing a race condition
 
 def handle_client(client_socket, client_name):
-    # Store connection time in cache
-    clients_cache[client_name] = {'connected_at': datetime.datetime.now(), 'disconnected_at': None}
+    # Store connection time in cache after locking the operation
+    with cache_lock:
+        clients_cache[client_name] = {'connected_at': datetime.datetime.now(), 'disconnected_at': None}
 
     print(f"{client_name} connected.")
 
@@ -42,8 +42,10 @@ def handle_client(client_socket, client_name):
                 # Send server cache details by appending them to a single string
                 cache_info = ""
 
-                for name, details in clients_cache.items():
-                    cache_info += f"{name}: connected at {details['connected_at']}, disconnected at {details['disconnected_at']}\n"
+                with cache_lock: # Read action on the cache is locked to avoid race conditions/conflicts
+                    for name, details in clients_cache.items():
+                        cache_info += f"{name}: connected at {details['connected_at']}, disconnected at {details['disconnected_at']}\n"
+                
                 #print the string to the client  
                 client_socket.send(cache_info.encode())                
 
@@ -66,8 +68,10 @@ def handle_client(client_socket, client_name):
                     client_socket.send("File not found".encode())
 
             elif data == "exit":
-                # Handle client disconnection
-                clients_cache[client_name]['disconnected_at'] = datetime.datetime.now()
+                # Handle client disconnection and update cache disconnection time
+                with cache_lock:
+                    clients_cache[client_name]['disconnected_at'] = datetime.datetime.now()
+                
                 print(f"{client_name} disconnected.")
 
                 #Decrement the number of clients so another client can take its place later
@@ -99,10 +103,12 @@ def start_server():
     client_id_num = 0
 
     while True:
+        # Accept new client connection
+        client_socket, addr = server_socket.accept()
+
         with client_lock:
             if client_count < MAX_CLIENTS:
-                # Accept new client connection
-                client_socket, addr = server_socket.accept()
+                
 
                 # Reset the max client flag for the else statement so it prints the statement if its reached again
                 max_clients_reached = False
@@ -121,6 +127,10 @@ def start_server():
                 if not max_clients_reached:
                     print("Max clients connected. No more clients can connect at this time.")
                     max_clients_reached = True  # Set the flag to avoid repeated messages
+
+                # If the attempted connection surpasses the MAX_CLIENTS limit, the client is sent a message to close the socket
+                reply = "Failed to Connect"
+                client_socket.send(reply.encode())
 
 if __name__ == '__main__':
     start_server()

@@ -1,5 +1,5 @@
 # Sohum Pete            210354790
-# Dhanush Mohan-Kumar   
+# Dhanush Mohan-Kumar   210348040
 #
 # Note: Please open each client in a separate terminal as the confusion of executing this file more than once in the same 
 #       terminal causes the previous instances of the client in said terminal to remain open if it was not exited beforehand
@@ -18,6 +18,12 @@ def start_client():
 
     # The server will assign a name like Client01, Client02, etc.
     client_name = client_socket.recv(1024).decode()
+   
+    if client_name == "Failed to Connect":
+            print("Failed to Connect")
+            client_socket.close()
+            return
+   
     print(f"Connected to server as {client_name}")
 
     while True:
