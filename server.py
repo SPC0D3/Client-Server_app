@@ -17,7 +17,7 @@ PORT = 12345
 MAX_CLIENTS = 3
 
 clients_cache = {} # Cache to store client information (name, connection/disconnection times)
-cache_lock = threading.Lock() # Threading lock to safely read and write to the cache 1 thread at a time (avoiding race conditions)
+cache_lock = threading.Lock() # Threading lock to safely read and write to the cache 1 thread at a time 
 
 client_count = 0  # Add client_count to the global scope
 client_lock = threading.Lock()  # Threading lock to safely decrement client_count globally without causing a race condition
@@ -123,7 +123,7 @@ def start_server():
                 client_thread = threading.Thread(target=handle_client, args=(client_socket, client_name))
                 client_thread.start()
             else:
-                # Prevents infinite printing of the statement with the max clients flag which is reset if the counter decrements
+                # Prevents infinite printing of the statement with the max clients flag which is reset after the client connection is permitted
                 if not max_clients_reached:
                     print("Max clients connected. No more clients can connect at this time.")
                     max_clients_reached = True  # Set the flag to avoid repeated messages
