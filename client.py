@@ -1,12 +1,7 @@
 # Sohum Pete            210354790
 # Dhanush Mohan-Kumar   210348040
-#
-# Note: Please open each client in a separate terminal as the confusion of executing this file more than once in the same 
-#       terminal causes the previous instances of the client in said terminal to remain open if it was not exited beforehand
-#       (We do not yet know how to return to the previous instances of the client to close the instance if it can be done)
 
 # Import socket module
-
 import socket
 HOST = 'localhost'
 PORT = 12345
