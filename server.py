@@ -95,7 +95,7 @@ def start_server():
     #Create and bind the TCP socket to the host and a port
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((HOST, PORT))
-    server_socket.listen()
+    server_socket.listen(0)
     print("Server is listening...")
 
     max_clients_reached = False
@@ -108,8 +108,7 @@ def start_server():
 
         with client_lock:
             if client_count < MAX_CLIENTS:
-                
-
+            
                 # Reset the max client flag for the else statement so it prints the statement if its reached again
                 max_clients_reached = False
                 client_count += 1 # Tracks the number of active clients

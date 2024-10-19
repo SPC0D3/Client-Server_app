@@ -2,7 +2,9 @@
 # Dhanush Mohan-Kumar   210348040
 
 # Import socket module
+
 import socket
+import sys
 HOST = 'localhost'
 PORT = 12345
 
@@ -15,7 +17,7 @@ def start_client():
     client_name = client_socket.recv(1024).decode()
    
     if client_name == "Failed to Connect":
-            print("Failed to Connect")
+            print("Failed to Connect: Server at Capacity")
             client_socket.close()
             return
    
@@ -47,3 +49,4 @@ def start_client():
 
 if __name__ == '__main__':
     start_client()
+
